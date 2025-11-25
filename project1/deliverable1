@@ -1,0 +1,63 @@
+import re
+import json
+
+def evaluate_source(url: str) -> dict:
+    """
+    Evaluate the credibility of a given URL using simple heuristics.
+    Returns a JSON-like dictionary with a score (0.0–1.0) and explanation.
+    """
+
+    # Basic validation
+    if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+        return {
+            "score": 0.0,
+            "explanation": "Invalid or malformed URL provided."
+        }
+
+    # Initialize score
+    score = 0.5
+    explanation_parts = []
+
+    # Heuristic 1: Domain authority (academic/government vs blog/personal site)
+    if re.search(r"\.edu|\.gov|\.org", url):
+        score += 0.3
+        explanation_parts.append("Domain suggests higher authority (academic/government/organization).")
+    elif re.search(r"medium\.com|blogspot|wordpress", url):
+        score -= 0.2
+        explanation_parts.append("Domain suggests personal or informal blog.")
+
+    # Heuristic 2: Presence of HTTPS (secure connection)
+    if url.startswith("https://"):
+        score += 0.1
+        explanation_parts.append("Secure HTTPS connection detected.")
+
+    # Heuristic 3: Known reputable sources (example list)
+    reputable_sources = ["nature.com", "nytimes.com", "bbc.com", "who.int"]
+    if any(source in url for source in reputable_sources):
+        score += 0.2
+        explanation_parts.append("Recognized reputable publication.")
+
+    # Clamp score between 0 and 1
+    score = max(0.0, min(1.0, score))
+
+    # Build explanation string
+    if not explanation_parts:
+        explanation_parts.append("No strong credibility indicators found; default baseline applied.")
+    explanation = " ".join(explanation_parts)
+
+    return {
+        "score": round(score, 2),
+        "explanation": explanation
+    }
+
+# Example usage
+if __name__ == "__main__":
+    test_urls = [
+        "https://www.nature.com/articles/example",
+        "http://blogspot.com/myblog",
+        "https://govinfo.gov/resource",
+        "invalid_url"
+    ]
+    for url in test_urls:
+        result = evaluate_source(url)
+        print(json.dumps(result, indent=2))
